@@ -169,9 +169,16 @@ on init
 
     insmod /system/lib/modules/sec.ko
 
+# Install GAN virtual interface kernel module
+    insmod /system/lib/modules/kineto_gan.ko
+
 # chown/chmod for FOTA
     chown system system /cache/fota
     chmod 0770 /cache/fota
+
+# minipad
+    chown system system /dev/qtouch-obp-ts
+    chmod 0664 /dev/qtouch-obp-ts
 
 on early-boot
 
@@ -215,6 +222,8 @@ on boot
    chown system system /sys/class/leds/keyboard-backlight/brightness
    chmod 0660 /sys/class/leds/keyboard-backlight/brightness
    chown system system /sys/class/leds/button-backlight/brightness
+   chmod 0660 /sys/class/leds/button-backlight/blink
+   chown system system /sys/class/leds/button-backlight/blink
    chmod 0660 /sys/class/leds/button-backlight/brightness
    chown system system /sys/class/leds/red/blink
    chown system system /sys/class/leds/red/brightness
@@ -228,10 +237,6 @@ on boot
    chown system system /sys/class/leds/spotlight/brightness
    chown system system /sys/class/leds/blue/brightness
    chmod 0660 /sys/class/leds/blue/brightness
-
-# Camera related
-   chmod 0660 /dev/hplens-omap
-   chown media camera /dev/hplens-omap
 
 # Enable panic on softlockup
     write /proc/sys/kernel/softlockup_panic 1
@@ -396,46 +401,6 @@ service hciattach /system/bin/hciattach \
     user bluetooth
     group bluetooth net_bt_admin
     disabled
-
-service nap /system/bin/sdptool add NAP
-    class post-zygote_services
-    user bluetooth
-    group bluetooth net_bt_admin
-    disabled
-    oneshot
-
-service del_nap /system/bin/sdptool remove NAP
-    class post-zygote_services
-    user bluetooth
-    group bluetooth net_bt_admin
-    disabled
-    oneshot
-
-service panu /system/bin/sdptool add PANU
-    class post-zygote_services
-    user bluetooth
-    group bluetooth net_bt_admin
-    disabled
-    oneshot
-
-service del_panu /system/bin/sdptool remove PANU
-    class post-zygote_services
-   user bluetooth
-    group bluetooth net_bt_admin
-    disabled
-    oneshot
-
-service napics /system/bin/sh /system/bin/napics.sh
-    class post-zygote_services
-    user root
-    disabled
-    oneshot
-
-service btdhcpd /system/xbin/dnsmasq -C /etc/btpan.conf
-    class post-zygote_services
-    user root
-    disabled
-    oneshot
     
 service tcmd /system/bin/tcmd
     class post-zygote_services
@@ -446,6 +411,7 @@ service tcmd /system/bin/tcmd
 
 service tcmdhelp /system/bin/tcmdhelp
     class post-zygote_services
+    socket tcmdhelp stream 0600 mot_tcmd
     oneshot
     disabled
 
@@ -518,16 +484,6 @@ service dhcpcd /system/bin/dhcpcd -ABKL tiwlan0
     oneshot
 
 service autoip /system/bin/dhcpcd -BK tiwlan0
-    class post-zygote_services
-    disabled
-    oneshot
-
-service btdhcpcd /system/bin/dhcpcd -ABKL bnep0
-    class post-zygote_services
-    disabled
-    oneshot
-
-service btautoip /system/bin/dhcpcd -BK bnep0
     class post-zygote_services
     disabled
     oneshot
@@ -605,3 +561,10 @@ service dund_dialup /system/bin/dund --listen --channel=6 --nodetach --dialup
     class post-zygote_services
     disabled
     oneshot
+
+# bugtogo is triggered by the KEY_LEFTSHIFT and KEY_DEL keycodes
+service bugtogo /system/bin/bugtogo
+    disabled
+    user root
+    oneshot
+    keycodes 42 14
